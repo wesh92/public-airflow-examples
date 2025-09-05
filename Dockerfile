@@ -13,7 +13,7 @@ WORKDIR /build
 COPY pyproject.toml .
 
 # Generate the requirements.txt file from pyproject.toml
-RUN uv pip freeze > requirements.txt
+RUN uv pip compile pyproject.toml -c https://raw.githubusercontent.com/apache/airflow/constraints-3.0.2/constraints-3.9.txt -o requirements.txt
 
 
 # STAGE 2: Final Airflow Image

@@ -84,7 +84,7 @@ def kafka_consumer_dag_taskflow():
     stop_processing = EmptyOperator(task_id="stop_processing")
 
     # This task will run after either 'process_record' or 'stop_processing' completes.
-    end = EmptyOperator(task_id="end", trigger_rule="none_failed_or_skipped")
+    end = EmptyOperator(task_id="end", trigger_rule="none_failed_min_one_success")
 
     # Define the task dependencies
     branch_task = check_required_fields()

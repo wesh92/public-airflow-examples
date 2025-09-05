@@ -3,12 +3,12 @@ name = "airflow-kubernetes"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-    "cryptography>=45.0.7",
+    "apache-airflow-providers-apache-kafka>=1.9.0",
+    "apache-airflow-providers-cncf-kubernetes>=10.5.0",
 ]
 
 [dependency-groups]
 venv-needed = [
-    "apache-airflow>=3.0.6",
-    "apache-airflow-providers-apache-kafka>=1.10.2",
-    "apache-airflow-providers-cncf-kubernetes>=10.7.0",
+    "apache-airflow>=3.0.2",
+    "cryptography>=42.0.8"
 ]
