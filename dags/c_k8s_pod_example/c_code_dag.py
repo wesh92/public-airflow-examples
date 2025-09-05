@@ -25,8 +25,8 @@ int main() {
     tags=["kubernetes", "c-code", "example"],
 )
 def c_k8s_example():
-    start = EmptyOperator()
-    end = EmptyOperator()
+    start = EmptyOperator(task_id="start")
+    end = EmptyOperator(task_id="end")
     # This task launches a pod with the 'gcc' image, which contains a C compiler.
     # It then writes, compiles, and runs the C code defined above.
     compile_and_run_c_code = KubernetesPodOperator(
