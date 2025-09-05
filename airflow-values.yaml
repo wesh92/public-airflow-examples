@@ -7,6 +7,7 @@ executor: KubernetesExecutor
 # Generate your own secret keys for production.
 # Fernet Key: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 # Webserver Key: openssl rand -hex 30
+# These are my locals but you won't be getting any access to anything with these :wink:
 webserverSecretKey: "a745947747baf7bd0410bd526c88b3f1dc03a6b95cd1700baa992f73ed7f"
 fernetKey: "Y1ToX3X8nztBJA56w9z5oCA1YImEn9PcR-vE3FZRIqU="
 
@@ -17,12 +18,12 @@ dags:
     # We disable the PVC for dags because git-sync will handle them.
     enabled: false
   gitSync:
-    enabled: false
+    enabled: true
     # Replace this with the URL to YOUR git repository containing your DAGs.
-    repo: "https://github.com/apache/airflow.git"
+    repo: "https://github.com/wesh92/public-airflow-examples.git"
     branch: "main"
     # Optional: if your DAGs are in a subdirectory of the repo.
-    subPath: "airflow/example_dags"
+    subPath: "dags"
     # For a private repo, you would configure credentials here using a secret.
     # sshKeySecret: my-ssh-key-secret
 # It's good practice to set resource requests and limits for a real deployment
