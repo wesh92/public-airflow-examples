@@ -4,6 +4,10 @@
 # This will cause Airflow to spin up a new pod for each task instance.
 executor: KubernetesExecutor
 
+env:
+  - name: "AIRFLOW_CONN_KUBERNETES_DEFAULT"
+    value: "kubernetes://"
+
 # Generate your own secret keys for production.
 # Fernet Key: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 # Webserver Key: openssl rand -hex 30
@@ -34,5 +38,10 @@ images:
     # This is the key: it tells Kubernetes to use the local
     # image if present and not try to pull it from the internet.
     pullPolicy: IfNotPresent
+
+connections:
+  - conn_id: "kubernetes_default"
+    conn_type: "kubernetes"
+    conn_extra: "{}"
 # It's good practice to set resource requests and limits for a real deployment
 # but we'll use the defaults for this guide.
