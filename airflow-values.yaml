@@ -26,5 +26,13 @@ dags:
     subPath: "dags"
     # For a private repo, you would configure credentials here using a secret.
     # sshKeySecret: my-ssh-key-secret
+images:
+  airflow:
+    # Use the name you gave your local image
+    repository: my-local-airflow
+    tag: latest
+    # This is the key: it tells Kubernetes to use the local
+    # image if present and not try to pull it from the internet.
+    pullPolicy: IfNotPresent
 # It's good practice to set resource requests and limits for a real deployment
 # but we'll use the defaults for this guide.
