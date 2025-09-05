@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import pendulum
 
-from airflow.models.dag import DAG
-from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import (
-    KubernetesPodOperator,
-)
+from airflow.models.dag import dag
+from airflow.providers.standard.operators.empty import EmptyOperator
+from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 
 # A small C program to be executed.
 # Note the escaped newline character '\\n' for proper printing.
@@ -18,13 +17,16 @@ int main() {
 }
 """
 
-with DAG(
+@dag(
     dag_id="c_code_execution_dag",
     start_date=pendulum.datetime(2023, 1, 1, tz="UTC"),
     catchup=False,
     schedule=None,
     tags=["kubernetes", "c-code", "example"],
-) as dag:
+)
+def c_k8s_example():
+    start = EmptyOperator()
+    end = EmptyOperator()
     # This task launches a pod with the 'gcc' image, which contains a C compiler.
     # It then writes, compiles, and runs the C code defined above.
     compile_and_run_c_code = KubernetesPodOperator(
@@ -65,3 +67,6 @@ with DAG(
         # Log all events from the Kubernetes pod to the Airflow task logs.
         log_events_on_failure=True,
     )
+    start >> compile_and_run_c_code >> end
+
+dag = c_k8s_example()
