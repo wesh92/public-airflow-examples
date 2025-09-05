@@ -25,7 +25,6 @@ int main() {
     tags=["kubernetes", "c-code", "example"],
 )
 def c_k8s_example():
-
     start = EmptyOperator()
     end = EmptyOperator()
     # This task launches a pod with the 'gcc' image, which contains a C compiler.
