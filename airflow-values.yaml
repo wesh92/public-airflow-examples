@@ -21,15 +21,20 @@ dags:
   persistence:
     # We disable the PVC for dags because git-sync will handle them.
     enabled: false
+  # gitSync:
+  #   enabled: true
+  #   # Replace this with the URL to YOUR git repository containing your DAGs.
+  #   repo: "https://github.com/wesh92/public-airflow-examples.git"
+  #   branch: "main"
+  #   # Optional: if your DAGs are in a subdirectory of the repo.
+  #   subPath: "dags"
+  #   # For a private repo, you would configure credentials here using a secret.
+  #   # sshKeySecret: my-ssh-key-secret
   gitSync:
     enabled: true
-    # Replace this with the URL to YOUR git repository containing your DAGs.
     repo: "https://github.com/wesh92/public-airflow-examples.git"
-    branch: "main"
-    # Optional: if your DAGs are in a subdirectory of the repo.
+    branch: "feature/kafka-consumer-dag" # Changed from "main"
     subPath: "dags"
-    # For a private repo, you would configure credentials here using a secret.
-    # sshKeySecret: my-ssh-key-secret
 images:
   airflow:
     # Use the name you gave your local image
@@ -43,5 +48,8 @@ connections:
   - conn_id: "kubernetes_default"
     conn_type: "kubernetes"
     conn_extra: "{}"
+  - conn_id: "kafka_default"
+    conn_type: "kafka"
+    conn_extra: '{"bootstrap.servers": "192.168.0.187:9092"}'
 # It's good practice to set resource requests and limits for a real deployment
 # but we'll use the defaults for this guide.

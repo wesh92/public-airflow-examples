@@ -9,5 +9,6 @@ dependencies = [
 [dependency-groups]
 venv-needed = [
     "apache-airflow>=3.0.6",
+    "apache-airflow-providers-apache-kafka>=1.10.2",
     "apache-airflow-providers-cncf-kubernetes>=10.7.0",
 ]
