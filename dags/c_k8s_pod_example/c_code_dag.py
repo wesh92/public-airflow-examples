@@ -63,7 +63,7 @@ def c_k8s_example():
         env_vars={"C_CODE": C_CODE_STRING},
         # Defines what happens to the pod after the task finishes.
         # 'on_success': pod is deleted automatically if the task succeeds.
-        do_xcom_push=False,
+        do_xcom_push=True,
         # Log all events from the Kubernetes pod to the Airflow task logs.
         log_events_on_failure=True,
     )
