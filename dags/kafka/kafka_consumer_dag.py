@@ -52,10 +52,7 @@ def kafka_consumer_dag_taskflow():
     # This task will run after either 'process_record' or 'stop_processing' completes.
     end = EmptyOperator(task_id="end", trigger_rule="none_failed_min_one_success")
 
-    # Define the task dependencies
-    process_task = process_record()
-
-    consume_from_topic >> process_task >> end
+    consume_from_topic >> end
 
 # Instantiate the DAG
 kafka_consumer_dag_instance = kafka_consumer_dag_taskflow()
