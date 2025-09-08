@@ -5,6 +5,7 @@ requires-python = ">=3.12"
 dependencies = [
     "apache-airflow-providers-apache-kafka>=1.9.0",
     "apache-airflow-providers-cncf-kubernetes>=10.5.0",
+    "openfga-sdk>=0.9.5",
 ]
 
 [dependency-groups]
