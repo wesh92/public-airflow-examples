@@ -59,16 +59,6 @@ def kafka_consumer_dag_taskflow():
         max_messages=10,
     )
 
-    @task.branch
-    def check_required_fields(ti: TaskInstance):
-        """
-        Pulls the result from the consumer task and decides which path to take.
-        """
-        xcom_result = ti.xcom_pull(task_ids="consume_from_topic")
-        if xcom_result[0] == "process_record":
-            return "process_record"
-        return "stop_processing"
-
     @task
     def process_record(ti: TaskInstance):
         """
@@ -81,18 +71,13 @@ def kafka_consumer_dag_taskflow():
         print(f"  PID2: {extracted_data['pid2']}")
         print(f"  Internal ID: {extracted_data['internalId']}")
 
-    stop_processing = EmptyOperator(task_id="stop_processing")
-
     # This task will run after either 'process_record' or 'stop_processing' completes.
     end = EmptyOperator(task_id="end", trigger_rule="none_failed_min_one_success")
 
     # Define the task dependencies
-    branch_task = check_required_fields()
     process_task = process_record()
 
-    consume_from_topic >> branch_task
-    branch_task >> process_task >> end
-    branch_task >> stop_processing >> end
+    consume_from_topic >> process_task >> end
 
 # Instantiate the DAG
 kafka_consumer_dag_instance = kafka_consumer_dag_taskflow()
