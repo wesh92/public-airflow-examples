@@ -54,7 +54,7 @@ def kafka_consumer_dag_taskflow():
         task_id="consume_from_topic",
         kafka_config_id="kafka_default",
         topics=["my-topic"],
-        apply_function="kafka_consumer_dag.process_kafka_message",
+        apply_function=process_kafka_message,
         poll_timeout=60,
         max_messages=10,
     )
