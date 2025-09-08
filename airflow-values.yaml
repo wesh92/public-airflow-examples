@@ -4,12 +4,6 @@
 # This will cause Airflow to spin up a new pod for each task instance.
 executor: KubernetesExecutor
 
-env:
-  - name: "AIRFLOW_CONN_KUBERNETES_DEFAULT"
-    value: "kubernetes://"
-  - name: "AIRFLOW_CONN_KAFKA_DEFAULT"
-    value: "kafka://:@192.168.0.187:9092"
-
 # Generate your own secret keys for production.
 # Fernet Key: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 # Webserver Key: openssl rand -hex 30
@@ -67,15 +61,6 @@ service:
     - name: airflow-ui
       port: 8085
       targetPort: airflow-ui
-
-connections:
-  - conn_id: "kubernetes_default"
-    conn_type: "kubernetes"
-    conn_extra: "{}"
-  - conn_id: "kafka_default"
-    conn_type: "kafka"
-    conn_extra: |
-      {"bootstrap.servers": "192.168.0.187:9092"}
 
 apiServer:
   # Number of Airflow API servers in the deployment
