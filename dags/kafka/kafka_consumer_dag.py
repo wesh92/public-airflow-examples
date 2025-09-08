@@ -15,22 +15,22 @@ def process_kafka_message(message):
     consumed from the topic and its return value is pushed to XComs.
     """
     data = json.loads(message.value().decode("utf-8"))
-    pass_id = data.get("passId")
-    pass_group_id = data.get("passGroupId")
+    pid = data.get("pid")
+    pid2 = data.get("pid2")
     # Nested .get() to safely access providerId
-    provider_id = data.get("data", {}).get("providerId")
+    internalId = data.get("data", {}).get("internalId")
 
     # If any required field is missing, we just return the string for the stop task.
-    if not all([pass_id, pass_group_id, provider_id]):
+    if not all([pid, pid2, internalId]):
         return "stop_processing"
 
     # If all fields are present, return a tuple with the target task_id and the data.
     return (
         "process_record",
         {
-            "pass_id": pass_id,
-            "pass_group_id": pass_group_id,
-            "provider_id": provider_id,
+            "pid": pid,
+            "pid2": pid2,
+            "internalId": internalId,
         },
     )
 
@@ -77,9 +77,9 @@ def kafka_consumer_dag_taskflow():
         # Pull the data payload from the tuple returned by the consumer
         _, extracted_data = ti.xcom_pull(task_ids="consume_from_topic", key="return_value")
         print("Processing record with the following details:")
-        print(f"  Pass ID: {extracted_data['pass_id']}")
-        print(f"  Pass Group ID: {extracted_data['pass_group_id']}")
-        print(f"  Provider ID: {extracted_data['provider_id']}")
+        print(f"  PID: {extracted_data['pid']}")
+        print(f"  PID2: {extracted_data['pid2']}")
+        print(f"  Internal ID: {extracted_data['internalId']}")
 
     stop_processing = EmptyOperator(task_id="stop_processing")
 
