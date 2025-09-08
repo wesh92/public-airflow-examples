@@ -12,7 +12,7 @@ from airflow.providers.standard.operators.empty import EmptyOperator
 def process_kafka_message(message):
     """
     Processes a message from Kafka. This function is called for each message
-    consumed from the topic and its return value is pushed to XComs.
+    consumed from the topic
     """
     data = json.loads(message.value().decode("utf-8"))
     pid = data.get("pid")
@@ -20,19 +20,9 @@ def process_kafka_message(message):
     # Nested .get() to safely access providerId
     internalId = data.get("data", {}).get("internalId")
 
-    # If any required field is missing, we just return the string for the stop task.
-    if not all([pid, pid2, internalId]):
-        return "stop_processing"
-
-    # If all fields are present, return a tuple with the target task_id and the data.
-    return (
-        "process_record",
-        {
-            "pid": pid,
-            "pid2": pid2,
-            "internalId": internalId,
-        },
-    )
+    print(pid)
+    print(pid2)
+    print(internalId)
 
 
 @dag(
@@ -58,18 +48,6 @@ def kafka_consumer_dag_taskflow():
         poll_timeout=60,
         max_messages=10,
     )
-
-    @task
-    def process_record(ti: TaskInstance):
-        """
-        Logs the extracted values from the Kafka message.
-        """
-        # Pull the data payload from the tuple returned by the consumer
-        _, extracted_data = ti.xcom_pull(task_ids="consume_from_topic", key="return_value")
-        print("Processing record with the following details:")
-        print(f"  PID: {extracted_data['pid']}")
-        print(f"  PID2: {extracted_data['pid2']}")
-        print(f"  Internal ID: {extracted_data['internalId']}")
 
     # This task will run after either 'process_record' or 'stop_processing' completes.
     end = EmptyOperator(task_id="end", trigger_rule="none_failed_min_one_success")
