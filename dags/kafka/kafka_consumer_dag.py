@@ -64,8 +64,8 @@ def kafka_consumer_dag_taskflow():
         """
         Pulls the result from the consumer task and decides which path to take.
         """
-        xcom_result = ti.xcom_pull(task_ids="consume_from_topic", key="return_value")
-        if isinstance(xcom_result, tuple) and xcom_result[0] == "process_record":
+        xcom_result = ti.xcom_pull(task_ids="consume_from_topic")
+        if xcom_result[0] == "process_record":
             return "process_record"
         return "stop_processing"
 
