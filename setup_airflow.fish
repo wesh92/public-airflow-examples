@@ -168,6 +168,9 @@ function deploy_kafka
 
     _log "INFO" "Deploying Kafka topic..."
     sudo k3s kubectl apply -f kafka-topic.yaml -n $KAFKA_NAMESPACE
+
+    _log "INFO" "Proxying Kafka..."
+    proxy_kafka_bootstrap_server
 end
 
 # --- Management Functions ---
@@ -209,6 +212,16 @@ end
 function proxy_airflow_api
     _log "INFO" "Proxying Airflow API to localhost:8085..."
     nohup kubectl port-forward svc/airflow-api-server 8085:8085 --namespace airflow &
+end
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#   proxy_kafka_bootstrap_server
+#
+#   Forwards the Kafka External Boostrap Servers to localhost for easy access.
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function proxy_kafka_bootstrap_server
+    _log "INFO" "Proxying Kafka to localhost:9094..."
+    nohup kubectl port-forward svc/my-cluster-kafka-external-bootstrap 9094:9094 --namespace kafka &
 end
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -271,6 +284,7 @@ function usage
     echo "  --rebuild-docker-image        Rebuild the Docker image and push to k3s"
     echo "  --help                        Show this help message"
     echo "  --delete-and-rebuild-kafka    Delete and rebuild the Kafka Deployment"
+    echo "  --proxy-kafka                 Proxy the Kafka External Boostrap Servers service"
 end
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -313,6 +327,8 @@ function main
             get_dashboard_secret
         case "--proxy-airflow-api"
             proxy_airflow_api
+        case "--proxy-kafka"
+            proxy_kafka_bootstrap_server
         case "--delete-and-rebuild-airflow"
             delete_and_rebuild_airflow
         case "--delete-and-rebuild-kafka"
