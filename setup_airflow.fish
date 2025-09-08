@@ -17,6 +17,8 @@
 # --- Configuration ---
 set -g AIRFLOW_NAMESPACE "airflow"
 set -g HELM_RELEASE_NAME "airflow"
+set -g KAFKA_NAMESPACE "kafka"
+set -g STRIMZI_RELEASE_NAME "strimzi-cluster-operator"
 set -g LOCAL_REGISTRY "localhost:5001"
 set -g DOCKER_IMAGE_NAME "my-local-airflow"
 set -g DOCKER_IMAGE_TAG "latest"
@@ -145,6 +147,29 @@ function deploy_airflow
         --values airflow-values.yaml
 end
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#   deploy_kafka
+#
+#   Deploys the Strimzi Kafka operator and a Kafka cluster.
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function deploy_kafka
+    _log "INFO" "Creating the Kafka namespace..."
+    sudo k3s kubectl create namespace $KAFKA_NAMESPACE --dry-run=client -o yaml | sudo k3s kubectl apply -f -
+
+    _log "INFO" "Deploying Strimzi Kafka Operator from OCI..."
+    helm install $STRIMZI_RELEASE_NAME oci://quay.io/strimzi-helm/strimzi-kafka-operator \
+        --namespace $KAFKA_NAMESPACE --wait
+
+    _log "INFO" "Deploying Kafka cluster..."
+    sudo k3s kubectl apply -f kafka-cluster.yaml -n $KAFKA_NAMESPACE
+
+    _log "INFO" "Waiting for Kafka cluster to be ready..."
+    sudo k3s kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n $KAFKA_NAMESPACE
+
+    _log "INFO" "Deploying Kafka topic..."
+    sudo k3s kubectl apply -f kafka-topic.yaml -n $KAFKA_NAMESPACE
+end
+
 # --- Management Functions ---
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -182,8 +207,8 @@ end
 #   Forwards the Airflow API to localhost for easy access.
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function proxy_airflow_api
-    _log "INFO" "Proxying Airflow API to localhost:8080..."
-    nohup kubectl port-forward svc/airflow-api-server 8080:8080 --namespace airflow &
+    _log "INFO" "Proxying Airflow API to localhost:8085..."
+    nohup kubectl port-forward svc/airflow-api-server 8085:8085 --namespace airflow &
 end
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -197,6 +222,19 @@ function delete_and_rebuild_airflow
     sudo k3s kubectl delete namespace $AIRFLOW_NAMESPACE
     _log "INFO" "Rebuilding Airflow..."
     deploy_airflow
+end
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#   delete_and_rebuild_kafka
+#
+#   Deletes the Kafka cluster and redeploys it.
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function delete_and_rebuild_kafka
+    _log "INFO" "Deleting Kafka deployment..."
+    helm uninstall $STRIMZI_RELEASE_NAME --namespace $KAFKA_NAMESPACE
+    sudo k3s kubectl delete namespace $KAFKA_NAMESPACE
+    _log "INFO" "Rebuilding Kafka..."
+    deploy_kafka
 end
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -232,6 +270,7 @@ function usage
     echo "  --delete-and-rebuild-k3s      Delete the entire k3s cluster and rebuild"
     echo "  --rebuild-docker-image        Rebuild the Docker image and push to k3s"
     echo "  --help                        Show this help message"
+    echo "  --delete-and-rebuild-kafka    Delete and rebuild the Kafka Deployment"
 end
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -253,6 +292,7 @@ function setup_all
     setup_local_registry
     build_and_push_image
     deploy_airflow
+    deploy_kafka
 end
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -275,6 +315,8 @@ function main
             proxy_airflow_api
         case "--delete-and-rebuild-airflow"
             delete_and_rebuild_airflow
+        case "--delete-and-rebuild-kafka"
+            delete_and_rebuild_kafka
         case "--delete-and-rebuild-k3s"
             delete_and_rebuild_k3s
         case "--rebuild-docker-image"

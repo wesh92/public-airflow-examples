@@ -46,6 +46,28 @@ images:
     # image if present and not try to pull it from the internet.
     pullPolicy: IfNotPresent
 
+ports:
+  flowerUI: 5555
+  airflowUI: 8085
+  workerLogs: 8793
+  triggererLogs: 8794
+  redisDB: 6379
+  statsdIngest: 9125
+  statsdScrape: 9102
+  pgbouncer: 6543
+  pgbouncerScrape: 9127
+  apiServer: 8085
+
+service:
+  type: ClusterIP
+  ## service annotations
+  annotations: {}
+  # To change the port used to access the webserver:
+  ports:
+    - name: airflow-ui
+      port: 8085
+      targetPort: airflow-ui
+
 connections:
   - conn_id: "kubernetes_default"
     conn_type: "kubernetes"
@@ -55,5 +77,167 @@ connections:
     conn_extra: |
       {"bootstrap.servers": "192.168.0.187:9092"}
 
-# It's good practice to set resource requests and limits for a real deployment
-# but we'll use the defaults for this guide.
+apiServer:
+  # Number of Airflow API servers in the deployment
+  replicas: 1
+  # Max number of old replicasets to retain
+  revisionHistoryLimit: ~
+
+  # Labels specific to Airflow API server objects and pods
+  labels: {}
+
+  # Command to use when running the Airflow API server (templated).
+  command: ~
+  # Args to use when running the Airflow API server (templated).
+  args:
+    [
+      "bash",
+      "-c",
+      "exec airflow api-server --port {{ .Values.ports.apiServer }}",
+    ]
+  allowPodLogReading: true
+  env: []
+  serviceAccount:
+    # default value is true
+    # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+    automountServiceAccountToken: true
+    # Specifies whether a ServiceAccount should be created
+    create: true
+    # The name of the ServiceAccount to use.
+    # If not set and create is true, a name is generated using the release name
+    name: ~
+
+    # Annotations to add to Airflow API server kubernetes service account.
+    annotations: {}
+  service:
+    type: ClusterIP
+    ## service annotations
+    annotations: {}
+    ports:
+      - name: api-server
+        port: "{{ .Values.ports.apiServer }}"
+
+    loadBalancerIP: ~
+    ## Limit load balancer source ips to list of CIDRs
+    # loadBalancerSourceRanges:
+    #   - "10.123.0.0/16"
+    loadBalancerSourceRanges: []
+
+  podDisruptionBudget:
+    enabled: false
+
+    # PDB configuration
+    config:
+      # minAvailable and maxUnavailable are mutually exclusive
+      maxUnavailable: 1
+      # minAvailable: 1
+
+  # Allow overriding Update Strategy for API server
+  strategy: ~
+
+  # Detailed default security contexts for Airflow API server deployments for container and pod level
+  securityContexts:
+    pod: {}
+    container: {}
+
+  # container level lifecycle hooks
+  containerLifecycleHooks: {}
+
+  waitForMigrations:
+    # Whether to create init container to wait for db migrations
+    enabled: true
+    env: []
+    # Detailed default security context for waitForMigrations for container level
+    securityContexts:
+      container: {}
+
+  # Launch additional containers into the Airflow API server pods.
+  extraContainers: []
+  # Add additional init containers into API server (templated).
+  extraInitContainers: []
+
+  # Mount additional volumes into API server. It can be templated like in the following example:
+  #   extraVolumes:
+  #     - name: my-templated-extra-volume
+  #       secret:
+  #          secretName: '{{ include "my_secret_template" . }}'
+  #          defaultMode: 0640
+  #          optional: true
+  #
+  #   extraVolumeMounts:
+  #     - name: my-templated-extra-volume
+  #       mountPath: "{{ .Values.my_custom_path }}"
+  #       readOnly: true
+  extraVolumes: []
+  extraVolumeMounts: []
+
+  # Select certain nodes for Airflow API server pods.
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  topologySpreadConstraints: []
+
+  priorityClassName: ~
+
+  #  hostAliases for API server pod
+  hostAliases: []
+
+  # annotations for Airflow API server deployment
+  annotations: {}
+
+  podAnnotations: {}
+
+  networkPolicy:
+    ingress:
+      # Peers for Airflow API server NetworkPolicy ingress
+      from: []
+      # Ports for Airflow API server NetworkPolicy ingress (if `from` is set)
+      ports:
+        - port: "{{ .Values.ports.apiServer }}"
+
+  resources: {}
+  #   limits:
+  #     cpu: 100m
+  #     memory: 128Mi
+  #   requests:
+  #     cpu: 100m
+  #     memory: 128Mi
+
+  # Add custom annotations to the apiServer configmap
+  configMapAnnotations: {}
+
+  # This string (templated) will be mounted into the Airflow API Server
+  # as a custom webserver_config.py. You can bake a webserver_config.py in to
+  # your image instead or specify a configmap containing the
+  # webserver_config.py.
+  apiServerConfig: ~
+  # apiServerConfig: |
+  #   from airflow import configuration as conf
+
+  #   # The SQLAlchemy connection string.
+  #   SQLALCHEMY_DATABASE_URI = conf.get('database', 'SQL_ALCHEMY_CONN')
+
+  #   # Flask-WTF flag for CSRF
+  #   CSRF_ENABLED = True
+  apiServerConfigConfigMapName: ~
+
+  livenessProbe:
+    initialDelaySeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 5
+    periodSeconds: 10
+    scheme: HTTP
+
+  readinessProbe:
+    initialDelaySeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 5
+    periodSeconds: 10
+    scheme: HTTP
+
+  startupProbe:
+    initialDelaySeconds: 0
+    timeoutSeconds: 20
+    failureThreshold: 6
+    periodSeconds: 10
+    scheme: HTTP
