@@ -7,6 +7,8 @@ executor: KubernetesExecutor
 env:
   - name: "AIRFLOW_CONN_KUBERNETES_DEFAULT"
     value: "kubernetes://"
+  - name: "AIRFLOW_CONN_KAFKA_DEFAULT"
+    value: "kafka://:@192.168.0.187:9092"
 
 # Generate your own secret keys for production.
 # Fernet Key: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
@@ -50,6 +52,8 @@ connections:
     conn_extra: "{}"
   - conn_id: "kafka_default"
     conn_type: "kafka"
-    conn_extra: '{"bootstrap.servers": "192.168.0.187:9092"}'
+    conn_extra: |
+      {"bootstrap.servers": "192.168.0.187:9092"}
+
 # It's good practice to set resource requests and limits for a real deployment
 # but we'll use the defaults for this guide.
