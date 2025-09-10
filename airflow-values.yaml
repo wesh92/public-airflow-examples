@@ -2,7 +2,7 @@
 
 # Set the executor to KubernetesExecutor
 # This will cause Airflow to spin up a new pod for each task instance.
-executor: KubernetesExecutor
+executor: CeleryExecutor,KubernetesExecutor
 
 # Generate your own secret keys for production.
 # Fernet Key: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"

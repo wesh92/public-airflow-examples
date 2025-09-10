@@ -1,0 +1,7 @@
+service:
+  # This changes the port the Kubernetes Service exposes.
+  port: 8088
+
+http:
+  # This changes the port the OpenFGA container listens on.
+  addr: 0.0.0.0:8088
