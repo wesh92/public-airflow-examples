@@ -4,7 +4,7 @@ import pendulum
 from airflow.decorators import dag, task
 from airflow.models.param import Param
 from openfga_sdk import OpenFgaApi
-from openfga_sdk.api_client import ApiClient, Configuration
+from openfga_sdk.client import ClientConfiguration, OpenFgaClient
 from openfga_sdk.models.create_store_request import CreateStoreRequest
 
 @dag(
@@ -22,22 +22,14 @@ from openfga_sdk.models.create_store_request import CreateStoreRequest
 )
 def create_openfga_store_dag():
     @task
-    def create_store(**context):
-        configuration = Configuration(
+    async def create_store(**context):
+        configuration = ClientConfiguration(
             api_host="openfga.default:8088", # Your OpenFGA service and port
         )
-        api_client = ApiClient(configuration)
-        api_instance = OpenFgaApi(api_client)
-
-        try:
-            response = api_instance.create_store(
-                body=CreateStoreRequest(name=context["params"]["store_name"])
-            )
-            print(f"Store created with ID: {response.id}")
-            return response.id
-        except Exception as e:
-            print(f"Error creating store: {e}")
-            raise
+        async with OpenFgaClient(configuration) as fga:
+            api_response = await fga.list_stores()
+            print(str(api_response.content_length))
+            await fga.close()
 
     create_store()
 
