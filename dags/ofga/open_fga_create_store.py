@@ -3,9 +3,9 @@ from __future__ import annotations
 import pendulum
 from airflow.decorators import dag, task
 from airflow.models.param import Param
-from openfga_sdk import OpenFgaApi
-from openfga_sdk.client import ClientConfiguration, OpenFgaClient
+from openfga_sdk import OpenFgaApi, ApiClient, Configuration
 from openfga_sdk.models.create_store_request import CreateStoreRequest
+from openfga_sdk.exceptions import NotFoundException
 
 @dag(
     dag_id="open_fga_create_store",
@@ -16,20 +16,52 @@ from openfga_sdk.models.create_store_request import CreateStoreRequest
     params={
         "store_name": Param(
             type="string",
-            default="Kafka-Airflow-Store"
+            default="Kafka-Airflow-Store",
+            title="OpenFGA Store Name",
+            description="The name for the new OpenFGA store.",
         ),
     },
 )
 def create_openfga_store_dag():
+    """
+    ### Create OpenFGA Store
+    This DAG creates a new store in your OpenFGA instance using the
+    provided 'store_name' parameter.
+    """
+
     @task
     async def create_store(**context):
-        configuration = ClientConfiguration(
-            api_host="openfga.default:8088", # Your OpenFGA service and port
+        """
+        Asynchronously creates a new store in OpenFGA.
+        """
+        store_name = context["params"]["store_name"]
+
+        configuration = Configuration(
+            api_scheme="http",
+            api_host="openfga:8088",  # Your OpenFGA service and port
         )
-        async with OpenFgaClient(configuration) as fga:
-            api_response = await fga.list_stores()
-            print(str(api_response.content_length))
-            await fga.close()
+
+        try:
+            async with ApiClient(configuration) as api_client:
+                api_instance = OpenFgaApi(api_client)
+
+                # Check if a store with the same name already exists
+                existing_stores = await api_instance.list_stores()
+                for store in existing_stores.stores:
+                    if store.name == store_name:
+                        print(f"Store '{store_name}' already exists with ID: {store.id}")
+                        return store.id
+
+                # If not, create a new one
+                body = CreateStoreRequest(name=store_name)
+                response = await api_instance.create_store(body)
+
+                print(f"Successfully created store '{store_name}' with ID: {response.id}")
+                return response.id
+
+        except Exception as e:
+            print(f"Error communicating with OpenFGA: {e}")
+            raise
 
     create_store()
 
