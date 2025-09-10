@@ -93,7 +93,7 @@ def check_openfga_tuple_dag():
                     return response.allowed
 
             except Exception as e:
-                print(f"Error communicating with OpenFGA: {e}")
+                print(f"Error communicating with OpenFGA...: {e}")
                 raise
 
         return asyncio.run(_check_tuple_async())
