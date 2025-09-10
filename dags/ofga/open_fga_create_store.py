@@ -54,10 +54,9 @@ def create_openfga_store_dag():
 
                 # If not, create a new one
                 body = CreateStoreRequest(name=store_name)
-                response = await api_instance.create_store(body)
+                await api_instance.create_store(body)
 
-                print(f"Successfully created store '{store_name}' with ID: {response.id}")
-                return response.id
+                return
 
         except Exception as e:
             print(f"Error communicating with OpenFGA: {e}")
