@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pendulum
 from airflow.decorators import dag, task
+from airflow.models.param import Param
 from openfga_sdk import OpenFgaApi
 from openfga_sdk.api_client import ApiClient, Configuration
 from openfga_sdk.models.create_store_request import CreateStoreRequest
@@ -12,10 +13,16 @@ from openfga_sdk.models.create_store_request import CreateStoreRequest
     catchup=False,
     schedule=None,
     tags=["openfga"],
+    params={
+        "store_name": Param(
+            type="string",
+            default="Kafka-Airflow-Store"
+        ),
+    },
 )
 def create_openfga_store_dag():
     @task
-    def create_store():
+    def create_store(**context):
         configuration = Configuration(
             api_scheme="http",
             api_host="openfga:8088", # Your OpenFGA service and port
@@ -25,7 +32,7 @@ def create_openfga_store_dag():
 
         try:
             response = api_instance.create_store(
-                body=CreateStoreRequest(name="Kafka-Airflow-Store")
+                body=CreateStoreRequest(name=context["params"]["store_name"])
             )
             print(f"Store created with ID: {response.id}")
             return response.id
