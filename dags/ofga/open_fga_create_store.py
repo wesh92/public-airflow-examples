@@ -48,10 +48,9 @@ def create_openfga_store_dag():
 
                 # Check if a store with the same name already exists
                 existing_stores_response = await api_instance.list_stores()
-                for store in existing_stores_response.stores:
-                    if store.name == store_name:
-                        print(f"Store '{store_name}' already exists with ID: {store.id}")
-                        return store.id
+                async for element in existing_stores_response.content:
+                    print(element.decode("utf-8"))
+                    return
 
                 # If not, create a new one
                 body = CreateStoreRequest(name=store_name)
