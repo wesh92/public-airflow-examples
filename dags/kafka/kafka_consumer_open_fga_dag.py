@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import pendulum
 
@@ -7,13 +8,15 @@ from airflow.decorators import dag
 from airflow.providers.apache.kafka.operators.consume import ConsumeFromTopicOperator
 from airflow.providers.standard.operators.empty import EmptyOperator
 
+from openfga_sdk import OpenFgaApi, ApiClient, Configuration
 from openfga_sdk.models.tuple_key import TupleKey
+from openfga_sdk.models.write_request import WriteRequest
 
 
 def process_kafka_message(message):
     """
     Processes a message from Kafka, formats it as an OpenFGA tuple object,
-    and prints the resulting object and its dictionary representation.
+    and writes the tuple to the OpenFGA store.
     """
     data = json.loads(message.value().decode("utf-8"))
     pid = data.get("pid")
@@ -21,36 +24,71 @@ def process_kafka_message(message):
     internalId = data.get("data", {}).get("internalId")
 
     if pid and pid2 and internalId:
-        if TupleKey:
-            # 1. Define the components of the tuple
-            user = f"pid:{pid}"
-            relation = pid2
-            obj = f"internalId:{internalId}"
+        user = f"pid:{pid}"
+        relation = pid2
+        obj = f"internalId:{internalId}"
 
-            # 2. Create the actual OpenFGA TupleKey object
-            openfga_tuple_key = TupleKey(user=user, relation=relation, object=obj)
+        openfga_tuple_key = TupleKey(user=user, relation=relation, object=obj)
 
-            # 3. Print the results for verification
-            print(f"Successfully created TupleKey object: {openfga_tuple_key}")
-            print(f"TupleKey as dictionary: {openfga_tuple_key.to_dict()}")
+        async def _write_tuple_async():
+            """
+            Asynchronously writes the tuple to the OpenFGA store.
+            """
+            configuration = Configuration(
+                api_scheme="http",
+                api_host="openfga.default:8088",  # OpenFGA service and port
+                store_id="01K4T7VNNPX4AGCASBVAAMWWPM"
+            )
 
-        else:
-            print("Skipping tuple creation because OpenFGA SDK is missing.")
+            try:
+                async with ApiClient(configuration) as api_client:
+                    api_instance = OpenFgaApi(api_client)
+
+                    # Get the store ID for "Kafka-Airflow-Store"
+                    stores_response = await api_instance.list_stores()
+                    store_id = None
+                    for store in stores_response.stores:
+                        if store.name == "Kafka-Airflow-Store":
+                            store_id = store.id
+                            break
+
+                    if not store_id:
+                        print("Store 'Kafka-Airflow-Store' not found.")
+                        return
+
+                    # Create a WriteRequest
+                    body = WriteRequest(
+                        writes=[openfga_tuple_key]
+                    )
+
+                    # Write the tuple to the store
+                    response = await api_instance.write(body)
+
+                    print(f"Successfully wrote tuple: {openfga_tuple_key.to_dict()}")
+                    print(f"Response: {response}")
+
+            except Exception as e:
+                print(f"Error communicating with OpenFGA: {e}")
+                raise
+
+        asyncio.run(_write_tuple_async())
+
     else:
         print(f"Skipping message due to missing data: {data}")
 
 
 @dag(
-    dag_id="kafka_consumer_dag_taskflow",
+    dag_id="kafka_consumer_open_fga_dag",
     start_date=pendulum.datetime(2023, 1, 1, tz="UTC"),
     catchup=False,
     schedule=None,
-    tags=["kafka", "consumer", "example", "taskflow"],
+    tags=["kafka", "consumer", "openfga", "example"],
 )
-def kafka_consumer_dag_taskflow():
+def kafka_consumer_open_fga_dag():
     """
-    ### Kafka Consumer DAG using TaskFlow API with production of a result.
-    This DAG consumes messages from a Kafka topic and produces an OpenFGA Tuple for export.
+    ### Kafka Consumer DAG with OpenFGA Integration
+    This DAG consumes messages from a Kafka topic, creates an OpenFGA tuple,
+    and writes it to an OpenFGA store.
     """
 
     consume_from_topic = ConsumeFromTopicOperator(
@@ -62,10 +100,10 @@ def kafka_consumer_dag_taskflow():
         max_messages=10,
     )
 
-    # This task will run after either 'process_record' or 'stop_processing' completes.
     end = EmptyOperator(task_id="end", trigger_rule="none_failed_min_one_success")
 
     consume_from_topic >> end
 
+
 # Instantiate the DAG
-kafka_consumer_dag_instance = kafka_consumer_dag_taskflow()
+kafka_consumer_dag_instance = kafka_consumer_open_fga_dag()
