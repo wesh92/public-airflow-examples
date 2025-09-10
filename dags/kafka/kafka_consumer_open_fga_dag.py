@@ -9,8 +9,7 @@ from airflow.providers.apache.kafka.operators.consume import ConsumeFromTopicOpe
 from airflow.providers.standard.operators.empty import EmptyOperator
 
 from openfga_sdk import OpenFgaApi, ApiClient, Configuration
-from openfga_sdk.models.tuple_key import TupleKey
-from openfga_sdk.models.write_request import WriteRequest
+from openfga_sdk.client.models import ClientTuple, ClientWriteRequest
 
 
 def process_kafka_message(message):
@@ -28,7 +27,7 @@ def process_kafka_message(message):
         relation = pid2
         obj = f"internalId:{internalId}"
 
-        openfga_tuple_key = TupleKey(user=user, relation=relation, object=obj)
+        openfga_tuple_key = ClientTuple(user=user, relation=relation, object=obj)
 
         async def _write_tuple_async():
             """
@@ -57,14 +56,14 @@ def process_kafka_message(message):
                         return
 
                     # Create a WriteRequest
-                    body = WriteRequest(
+                    body = ClientWriteRequest(
                         writes=[openfga_tuple_key]
                     )
 
                     # Write the tuple to the store
                     response = await api_instance.write(body)
 
-                    print(f"Successfully wrote tuple: {openfga_tuple_key.to_dict()}")
+                    print(f"Successfully wrote tuple: {openfga_tuple_key.__dict__}")
                     print(f"Response: {response}")
 
             except Exception as e:
