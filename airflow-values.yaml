@@ -61,15 +61,11 @@ service:
     - name: airflow-ui
       port: 8085
       targetPort: airflow-ui
-
-connections:
-  - conn_id: "kafka_default"
-    conn_type: "kafka"
-    conn_extra: '{"bootstrap.servers": "my-cluster-kafka-bootstrap.kafka:9092", "group.id": "group_1", "security.protocol": "PLAINTEXT", "auto.offset.reset": "beginning"}'
-
 env:
   - name: "AIRFLOW_CONN_KUBERNETES_DEFAULT"
     value: "kubernetes://"
+  - name: "AIRFLOW_CONN_KAFKA_DEFAULT"
+    value: "kafka:///?bootstrap.servers=my-cluster-kafka-bootstrap.kafka%3A9092&group.id=group_1&security.protocol=PLAINTEXT&auto.offset.reset=beginning"
 
 apiServer:
   # Number of Airflow API servers in the deployment

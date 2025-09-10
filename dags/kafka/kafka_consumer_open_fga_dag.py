@@ -3,8 +3,7 @@ from __future__ import annotations
 import json
 import pendulum
 
-from airflow.decorators import dag, task
-from airflow.models.taskinstance import TaskInstance
+from airflow.decorators import dag
 from airflow.providers.apache.kafka.operators.consume import ConsumeFromTopicOperator
 from airflow.providers.standard.operators.empty import EmptyOperator
 
