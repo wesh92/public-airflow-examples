@@ -42,7 +42,7 @@ def create_openfga_store_dag():
             """
             configuration = Configuration(
                 api_scheme="http",
-                api_host="openfga:8088",  # Your OpenFGA service and port
+                api_host="openfga.default:8088",  # Your OpenFGA service and port
             )
 
             try:
