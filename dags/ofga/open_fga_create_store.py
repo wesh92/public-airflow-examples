@@ -24,8 +24,7 @@ def create_openfga_store_dag():
     @task
     def create_store(**context):
         configuration = Configuration(
-            api_scheme="http",
-            api_host="openfga:8088", # Your OpenFGA service and port
+            api_host="openfga.default:8088", # Your OpenFGA service and port
         )
         api_client = ApiClient(configuration)
         api_instance = OpenFgaApi(api_client)
