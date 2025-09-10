@@ -5,7 +5,7 @@ from airflow.decorators import dag, task
 from airflow.models.param import Param
 from openfga_sdk import OpenFgaApi, ApiClient, Configuration
 from openfga_sdk.models.create_store_request import CreateStoreRequest
-from openfga_sdk.exceptions import OpenFgaError
+
 
 @dag(
     dag_id="open_fga_create_store",
@@ -60,7 +60,7 @@ def create_openfga_store_dag():
                 print(f"Successfully created store '{store_name}' with ID: {response.id}")
                 return response.id
 
-        except OpenFgaError as e:
+        except Exception as e:
             print(f"Error communicating with OpenFGA: {e}")
             raise
 
