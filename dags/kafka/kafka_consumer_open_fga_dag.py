@@ -8,7 +8,7 @@ from airflow.decorators import dag
 from airflow.providers.apache.kafka.operators.consume import ConsumeFromTopicOperator
 from airflow.providers.standard.operators.empty import EmptyOperator
 
-from openfga_sdk import OpenFgaApi, ApiClient, Configuration
+from openfga_sdk import OpenFgaClient, ApiClient, ClientConfiguration
 from openfga_sdk.client.models import ClientTuple, ClientWriteRequest
 
 
@@ -33,18 +33,17 @@ def process_kafka_message(message):
             """
             Asynchronously writes the tuple to the OpenFGA store.
             """
-            configuration = Configuration(
+            configuration = ClientConfiguration(
                 api_scheme="http",
                 api_host="openfga.default:8088",  # OpenFGA service and port
                 store_id="01K4T7VNNPX4AGCASBVAAMWWPM"
             )
 
             try:
-                async with ApiClient(configuration) as api_client:
-                    api_instance = OpenFgaApi(api_client)
+                async with OpenFgaClient(configuration) as ofga_client:
 
                     # Get the store ID for "Kafka-Airflow-Store"
-                    stores_response = await api_instance.list_stores()
+                    stores_response = await ofga_client.list_stores()
                     store_id = None
                     for store in stores_response.stores:
                         if store.name == "Kafka-Airflow-Store":
@@ -61,7 +60,7 @@ def process_kafka_message(message):
                     )
 
                     # Write the tuple to the store
-                    response = await api_instance.write(body)
+                    response = await ofga_client.write(body)
 
                     print(f"Successfully wrote tuple: {openfga_tuple_key.__dict__}")
                     print(f"Response: {response}")
