@@ -5,7 +5,7 @@ from airflow.decorators import dag, task
 from airflow.models.param import Param
 from openfga_sdk import OpenFgaApi, ApiClient, Configuration
 from openfga_sdk.models.create_store_request import CreateStoreRequest
-from openfga_sdk.exceptions import NotFoundException
+from openfga_sdk.exceptions import OpenFgaError
 
 @dag(
     dag_id="open_fga_create_store",
@@ -42,12 +42,13 @@ def create_openfga_store_dag():
         )
 
         try:
+            # The ApiClient should be used with an async context manager
             async with ApiClient(configuration) as api_client:
                 api_instance = OpenFgaApi(api_client)
 
                 # Check if a store with the same name already exists
-                existing_stores = await api_instance.list_stores()
-                for store in existing_stores.stores:
+                existing_stores_response = await api_instance.list_stores()
+                for store in existing_stores_response.stores:
                     if store.name == store_name:
                         print(f"Store '{store_name}' already exists with ID: {store.id}")
                         return store.id
@@ -59,7 +60,7 @@ def create_openfga_store_dag():
                 print(f"Successfully created store '{store_name}' with ID: {response.id}")
                 return response.id
 
-        except Exception as e:
+        except OpenFgaError as e:
             print(f"Error communicating with OpenFGA: {e}")
             raise
 
