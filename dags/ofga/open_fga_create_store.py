@@ -6,7 +6,6 @@ from airflow.models.param import Param
 from openfga_sdk import OpenFgaApi, ApiClient, Configuration
 from openfga_sdk.models.create_store_request import CreateStoreRequest
 
-
 @dag(
     dag_id="open_fga_create_store",
     start_date=pendulum.datetime(2023, 1, 1, tz="UTC"),
@@ -42,20 +41,26 @@ def create_openfga_store_dag():
         )
 
         try:
-            # The ApiClient should be used with an async context manager
             async with ApiClient(configuration) as api_client:
                 api_instance = OpenFgaApi(api_client)
 
-                # Check if a store with the same name already exists
+                # 1. Check if a store with the same name already exists
                 existing_stores_response = await api_instance.list_stores()
-                async for element in existing_stores_response.content:
-                    yield element
 
-                # If not, create a new one
+                # The response object has a `.stores` attribute which is a list.
+                # Iterate over this list directly.
+                for store in existing_stores_response.stores:
+                    if store.name == store_name:
+                        print(f"Store '{store_name}' already exists with ID: {store.id}")
+                        return store.id
+
+                # 2. If the loop completes without finding the store, create a new one.
+                print(f"Store '{store_name}' not found. Creating it now.")
                 body = CreateStoreRequest(name=store_name)
-                await api_instance.create_store(body)
+                response = await api_instance.create_store(body)
 
-                return
+                print(f"Successfully created store '{store_name}' with ID: {response.id}")
+                return response.id
 
         except Exception as e:
             print(f"Error communicating with OpenFGA: {e}")
